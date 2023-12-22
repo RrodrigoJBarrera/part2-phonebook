@@ -2,12 +2,18 @@ import React, { useEffect, useState } from 'react';
 import Persons from './components/Persons';
 import PersonForm from './components/PersonForm';
 import Filter from './components/Filter';
+import Notification from './components/Notification';
 import personsService from './services/persons';
+import './App.css';
 const App = () => {
   const [persons, setPersons] = useState([]);
   const [newName, setNewName] = useState('');
   const [newNumber, setNewNumber] = useState('');
   const [filterName, setFilterName] = useState('');
+  const [notificationMessage, setNotificationMessage] = useState({
+    message: null,
+    classNotification: '',
+  });
 
   useEffect(() => {
     personsService.getAll().then((initialPersons) => {
@@ -15,11 +21,9 @@ const App = () => {
     });
   }, []);
 
-  const filterList = persons.filter((person) => {
-    return person.name
-      .toLocaleLowerCase()
-      .includes(filterName.toLocaleLowerCase());
-  });
+  const filterList = filterName
+    ? persons.filter((person) => person.name.toLowerCase().includes(filterName))
+    : persons;
 
   const addPerson = (event) => {
     event.preventDefault();
@@ -39,17 +43,31 @@ const App = () => {
           setNewNumber('');
         })
         .catch((error) => {
-          alert(`the note '${person.name}' was already deleted from server`);
+          setNotificationMessage({
+            classNotification: 'error',
+            message: `Information of '${person.name}' has already deleted from server`,
+          });
+          setTimeout(() => {
+            setNotificationMessage({ classNotification: '', message: null });
+          }, 5000);
           setPersons(persons.filter((p) => p.id !== id));
         });
       return;
     }
+
     const personObject = {
       name: newName,
       number: newNumber,
     };
     personsService.create(personObject).then((returnedPerson) => {
       setPersons(persons.concat(returnedPerson));
+      setNotificationMessage({
+        classNotification: 'added',
+        message: `Added ${newName}`,
+      });
+      setTimeout(() => {
+        setNotificationMessage({ classNotification: '', message: null });
+      }, 5000);
       setNewNumber('');
       setNewName('');
     });
@@ -65,7 +83,13 @@ const App = () => {
           setPersons(rest);
         })
         .catch((error) => {
-          alert(`the note '${person.name}' was already deleted from server`);
+          setNotificationMessage({
+            classNotification: 'error',
+            message: `Information of '${person.name}' has already deleted from server`,
+          });
+          setTimeout(() => {
+            setNotificationMessage({ classNotification: '', message: null });
+          }, 5000);
           setPersons(persons.filter((p) => p.id !== id));
         });
     }
@@ -85,6 +109,10 @@ const App = () => {
   return (
     <div>
       <h2>Phonebook</h2>
+      <Notification
+        message={notificationMessage.message}
+        classNotification={notificationMessage.classNotification}
+      ></Notification>
       <Filter value={filterName} onChange={handleFilterNameChange} />
       <h2>Add a new</h2>
       <PersonForm
